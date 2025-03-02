@@ -17,20 +17,22 @@ st.markdown("""
     .main-header {
         font-size: 2.5rem !important;
         margin-bottom: 0.5rem !important;
+        padding-top: 2rem !important;  /* Added top padding */
     }
     .subheader {
-        font-size: 1.5rem !important;
-        color: #555555;
+        font-size: 1.7rem !important;  /* Same size as before */
+        font-style: italic !important;  /* Italicize the text */
         margin-bottom: 1.5rem !important;
     }
-    .card {
-        background-color: #f8f9fa;
-        padding: 1.5rem;
-        border-radius: 0.5rem;
-        margin-bottom: 1rem;
+    /* Add more top padding to the main container */
+    .block-container {
+        padding-top: 3rem !important;
     }
+    /* Ensure button styling */
     .stButton>button {
         width: 100%;
+        background-color: #4CAF50 !important; /* Green button */
+        color: white !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -46,10 +48,8 @@ def main():
     # Create two-column layout for main interface
     col1, col2 = st.columns([1, 2])
     
-    # Left column for controls
+    # Left column for controls (without card)
     with col1:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
-        
         # Model selection
         st.subheader("🤖 Model Selection")
         deployment_name = st.selectbox(
@@ -77,18 +77,17 @@ def main():
             help="How many times to call the model with the same prompt"
         )
         
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-    # Right column for prompt input
+    # Right column for prompt input (without card)
     with col2:
-        st.markdown('<div class="card">', unsafe_allow_html=True)
         st.subheader("💬 Question")
         question = st.text_area(
             "Enter your question:",
             placeholder="Type your question here. Try something that might have multiple valid answers, like 'What's a good name for a pet turtle?'",
             height=120
         )
-        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Move button to be under the question input
+        submit_button = st.button("🚀 Generate Responses", use_container_width=True)
     
     # Sidebar for system prompt
     with st.sidebar:
@@ -120,11 +119,6 @@ def main():
         st.caption("• Higher temperatures produce more varied responses")
         st.caption("• Try different system prompts to see how they affect consistency")
         st.caption("• For best results, ask clear, specific questions")
-    
-    # Submit button - centered and prominent
-    col1, col2, col3 = st.columns([1, 2, 1])
-    with col2:
-        submit_button = st.button("🚀 Generate Responses", use_container_width=True, type="primary")
     
     # Results area
     if submit_button and question:
@@ -174,7 +168,12 @@ def main():
                           axis=alt.Axis(labelLimit=400)),
                     x=alt.X('Count:Q', 
                           title='Frequency',
-                          axis=alt.Axis(tickMinStep=1)),
+                          axis=alt.Axis(
+                              tickMinStep=1,
+                              titleFontSize=14,   # Larger font for axis title
+                              titleFontWeight='bold',  # Bold font for axis title
+                              labelFontSize=12    # Larger font for tick labels
+                          )),
                     tooltip=['Response', 'Count']
                 ).properties(
                     height=max(300, len(chart_data) * 30)

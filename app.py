@@ -13,14 +13,15 @@ def main():
     # Initialize OpenAI client
     openai_client = OpenAIClientWrapper()
     
-    # Sidebar for system prompt
+        # Sidebar for system prompt
     with st.sidebar:
         st.subheader("System Prompt")
         
-        # Dropdown for preset prompts
+        # Dropdown for preset prompts with Concise Answers as default
         preset_option = st.selectbox(
             "Choose a preset:",
-            ["Research Assistant", "Concise Answers (10 words max)"]
+            ["Concise Answers (10 words max)", "Research Assistant"],
+            index=0  # Set index 0 (Concise Answers) as default
         )
         
         # Add some space
@@ -31,7 +32,7 @@ def main():
         if preset_option == "Research Assistant":
             default_prompt = "You are a helpful research assistant. Provide thorough and informative responses to questions."
         else:  # Concise Answers
-            default_prompt = "Answer the user's question in 10 words or less. Do not include explanations and only provide one answer. Provide only the direct answer in as few words as possible."
+            default_prompt = "Answer the user's question in 10 words or less. Do not include explanations. Provide only the direct answer in as few words as possible."
         
         # Editable text area that updates based on selection
         system_prompt = st.text_area(
@@ -86,21 +87,21 @@ def main():
             
             # Display the chart
             if len(chart_data) > 0:
-                # Truncate long responses for the chart labels
-                chart_data['Display'] = chart_data['Response'].apply(lambda x: (x[:30] + '...') if len(x) > 30 else x)
+                # For chart display, we'll use a more readable truncation
+                chart_data['Display'] = chart_data['Response'].apply(lambda x: (x[:40] + '...') if len(x) > 40 else x)
                 
+                # Create horizontal bar chart with improved readability
                 chart = alt.Chart(chart_data).mark_bar().encode(
-                    x=alt.X('Display:N', 
-                          title='Response', 
-                          sort='-y',
-                          axis=alt.Axis(
-                              labelAngle=-45,  # Angle the labels 45 degrees
-                              labelLimit=200   # Allow longer label text
-                          )),
-                    y=alt.Y('Count:Q', title='Frequency'),
-                    tooltip=['Display', 'Count']
+                    y=alt.Y('Display:N', 
+                        title='Response', 
+                        sort='-x',  # Sort by count in descending order
+                        axis=alt.Axis(labelLimit=400)),  # Allow longer labels
+                    x=alt.X('Count:Q', 
+                        title='Frequency',
+                        axis=alt.Axis(tickMinStep=1)),  # Force whole number ticks
+                    tooltip=['Response', 'Count']  # Full response in tooltip
                 ).properties(
-                    height=300
+                    height=max(300, len(chart_data) * 30)  # Increase height for better spacing
                 )
                 
                 st.altair_chart(chart, use_container_width=True)

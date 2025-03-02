@@ -31,7 +31,7 @@ def main():
         if preset_option == "Research Assistant":
             default_prompt = "You are a helpful research assistant. Provide thorough and informative responses to questions."
         else:  # Concise Answers
-            default_prompt = "Answer the user's question in 10 words or less. Do not include explanations. Provide only the direct answer in as few words as possible."
+            default_prompt = "Answer the user's question in 10 words or less. Do not include explanations and only provide one answer. Provide only the direct answer in as few words as possible."
         
         # Editable text area that updates based on selection
         system_prompt = st.text_area(

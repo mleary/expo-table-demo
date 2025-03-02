@@ -4,29 +4,102 @@ import pandas as pd
 import altair as alt
 from collections import Counter
 
-# Set page to wide mode
-st.set_page_config(layout="wide")
+# Set page config
+st.set_page_config(
+    page_title="LLM Consistency Analyzer",
+    page_icon="🤖",
+    layout="wide"
+)
+
+# Apply custom CSS for better spacing and styling
+st.markdown("""
+<style>
+    .main-header {
+        font-size: 2.5rem !important;
+        margin-bottom: 0.5rem !important;
+    }
+    .subheader {
+        font-size: 1.5rem !important;
+        color: #555555;
+        margin-bottom: 1.5rem !important;
+    }
+    .card {
+        background-color: #f8f9fa;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    .stButton>button {
+        width: 100%;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 def main():
-    st.title("Azure OpenAI Multiple Response Generator")
+    # Title with emoji
+    st.markdown('<p class="main-header">🔄 Assessing LLM Outputs for Consistency 📊</p>', unsafe_allow_html=True)
+    st.markdown('<p class="subheader">Compare how models respond to the same prompt across multiple runs</p>', unsafe_allow_html=True)
     
     # Initialize OpenAI client
     openai_client = OpenAIClientWrapper()
     
-        # Sidebar for system prompt
+    # Create two-column layout for main interface
+    col1, col2 = st.columns([1, 2])
+    
+    # Left column for controls
+    with col1:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        
+        # Model selection
+        st.subheader("🤖 Model Selection")
+        deployment_name = st.selectbox(
+            "Select model deployment:",
+            options=["gpt-4o", "gpt-4o-mini"],
+            index=0
+        )
+        
+        # Parameters
+        st.subheader("⚙️ Parameters")
+        temperature = st.slider(
+            "Temperature:", 
+            min_value=0.0, 
+            max_value=1.0, 
+            value=0.7, 
+            step=0.1,
+            help="Higher values make output more random, lower values more deterministic"
+        )
+        
+        num_calls = st.slider(
+            "Number of runs:", 
+            min_value=1, 
+            max_value=50, 
+            value=10,
+            help="How many times to call the model with the same prompt"
+        )
+        
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+    # Right column for prompt input
+    with col2:
+        st.markdown('<div class="card">', unsafe_allow_html=True)
+        st.subheader("💬 Question")
+        question = st.text_area(
+            "Enter your question:",
+            placeholder="Type your question here. Try something that might have multiple valid answers, like 'What's a good name for a pet turtle?'",
+            height=120
+        )
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Sidebar for system prompt
     with st.sidebar:
-        st.subheader("System Prompt")
+        st.subheader("🧠 System Prompt")
         
         # Dropdown for preset prompts with Concise Answers as default
         preset_option = st.selectbox(
             "Choose a preset:",
             ["Concise Answers (10 words max)", "Research Assistant"],
-            index=0  # Set index 0 (Concise Answers) as default
+            index=0
         )
-        
-        # Add some space
-        st.write("")
-        st.write("")
         
         # Default values based on selection
         if preset_option == "Research Assistant":
@@ -40,74 +113,78 @@ def main():
             value=default_prompt,
             height=150
         )
+        
+        # Additional tips in sidebar
+        st.divider()
+        st.caption("💡 **Tips:**")
+        st.caption("• Higher temperatures produce more varied responses")
+        st.caption("• Try different system prompts to see how they affect consistency")
+        st.caption("• For best results, ask clear, specific questions")
     
-    # Main content area
-    # Get user inputs
-    question = st.text_area("Enter your question:", height=150)
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        temperature = st.slider("Temperature:", min_value=0.0, max_value=1.0, value=0.7, step=0.1)
-    
+    # Submit button - centered and prominent
+    col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        num_calls = st.slider("Number of times to call the LLM:", min_value=1, max_value=50, value=1)
+        submit_button = st.button("🚀 Generate Responses", use_container_width=True, type="primary")
     
-    with col3:
-        deployment_name = st.selectbox(
-            "Select model deployment:",
-            options=["gpt-4o", "gpt-4o-mini"],
-            index=0
-        )
-
-    if st.button("Submit"):
-        if question:
-            # Create a placeholder for status updates
-            status_placeholder = st.empty()
-            status_placeholder.info("Request underway, please wait...")
-                    
-            with st.spinner(f"Generating {num_calls} responses..."):
-                responses = openai_client.call_llm(question, temperature, num_calls, deployment_name, system_prompt)
-            
-            # Clear the status message once completed
-            status_placeholder.empty()
-            
-            # Count occurrences of each unique response
-            response_counts = Counter(responses)
-            unique_count = len(response_counts)
-            
-            # Create a DataFrame for the chart
-            chart_data = pd.DataFrame({
-                'Response': list(response_counts.keys()),
-                'Count': list(response_counts.values())
-            }).sort_values('Count', ascending=False)
-            
+    # Results area
+    if submit_button and question:
+        # Create a placeholder for status updates
+        st.divider()
+        status_placeholder = st.empty()
+        status_placeholder.info("🔄 Request underway, please wait...")
+                
+        with st.spinner(f"Generating {num_calls} responses..."):
+            responses = openai_client.call_llm(question, temperature, num_calls, deployment_name, system_prompt)
+        
+        # Clear the status message once completed
+        status_placeholder.empty()
+        
+        # Count occurrences of each unique response
+        response_counts = Counter(responses)
+        unique_count = len(response_counts)
+        
+        # Create a DataFrame for the chart
+        chart_data = pd.DataFrame({
+            'Response': list(response_counts.keys()),
+            'Count': list(response_counts.values())
+        }).sort_values('Count', ascending=False)
+        
+        # Results in tabs
+        tab1, tab2 = st.tabs(["📊 Visualization", "📋 Full Results"])
+        
+        with tab1:
             # Display statistics
-            st.subheader(f"Response Diversity: {unique_count} unique responses out of {num_calls} total")
+            st.markdown(f"### Response Diversity: {unique_count} unique out of {num_calls} total")
+            
+            # Calculate consistency percentage
+            consistency = 100 * (num_calls - unique_count + 1) / num_calls if num_calls > 1 else 100
+            st.metric("Consistency Score", f"{consistency:.1f}%", 
+                      help="Higher percentages indicate more consistent responses")
             
             # Display the chart
             if len(chart_data) > 0:
-                # For chart display, we'll use a more readable truncation
+                # For chart display, use more readable truncation
                 chart_data['Display'] = chart_data['Response'].apply(lambda x: (x[:40] + '...') if len(x) > 40 else x)
                 
                 # Create horizontal bar chart with improved readability
                 chart = alt.Chart(chart_data).mark_bar().encode(
                     y=alt.Y('Display:N', 
-                        title='Response', 
-                        sort='-x',  # Sort by count in descending order
-                        axis=alt.Axis(labelLimit=400)),  # Allow longer labels
+                          title='Response', 
+                          sort='-x',
+                          axis=alt.Axis(labelLimit=400)),
                     x=alt.X('Count:Q', 
-                        title='Frequency',
-                        axis=alt.Axis(tickMinStep=1)),  # Force whole number ticks
-                    tooltip=['Response', 'Count']  # Full response in tooltip
+                          title='Frequency',
+                          axis=alt.Axis(tickMinStep=1)),
+                    tooltip=['Response', 'Count']
                 ).properties(
-                    height=max(300, len(chart_data) * 30)  # Increase height for better spacing
+                    height=max(300, len(chart_data) * 30)
                 )
                 
                 st.altair_chart(chart, use_container_width=True)
-            
-            # Display results as a table instead of expanders
-            st.subheader("Response Summary:")
+        
+        with tab2:
+            # Display results as a table
+            st.markdown("### Response Summary")
             
             # Create a dataframe with full responses and their counts
             results_df = pd.DataFrame({
@@ -115,10 +192,15 @@ def main():
                 'Count': list(response_counts.values())
             }).sort_values('Count', ascending=False)
             
+            # Add percentage column
+            results_df['Percentage'] = results_df['Count'] / num_calls * 100
+            results_df['Percentage'] = results_df['Percentage'].apply(lambda x: f"{x:.1f}%")
+            
             # Display the table
             st.dataframe(results_df, use_container_width=True, hide_index=True)
-        else:
-            st.warning("Please enter a question.")
+    
+    elif submit_button:
+        st.warning("⚠️ Please enter a question first.")
 
 if __name__ == "__main__":
     main()

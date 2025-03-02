@@ -101,9 +101,27 @@ def main():
                 "Max response length:", 
                 min_value=50, 
                 max_value=500, 
-                value=150,
+                value=256,  # Updated to OpenAI standard default
                 step=10,
                 help="Maximum number of tokens in each response"
+            )
+            
+            top_p = st.slider(
+                "Top P:", 
+                min_value=0.0, 
+                max_value=1.0, 
+                value=1.0,  # OpenAI standard default
+                step=0.05,
+                help="Controls diversity via nucleus sampling; smaller values consider fewer alternatives"
+            )
+            
+            frequency_penalty = st.slider(
+                "Frequency penalty:", 
+                min_value=0.0, 
+                max_value=2.0, 
+                value=0.0,  # OpenAI standard default
+                step=0.1,
+                help="Reduces repetition by discouraging tokens that have already appeared in the text"
             )
         
     # Right column for prompt input
@@ -191,7 +209,11 @@ def main():
                 temperature, 
                 batch_count, 
                 deployment_name, 
-                system_prompt
+                system_prompt,
+                max_tokens=max_tokens,
+                top_p=top_p,
+                frequency_penalty=frequency_penalty
+
             )
             
             # Add batch responses to the full list

@@ -13,7 +13,8 @@ class OpenAIClientWrapper:
             api_version=self.api_version
         )
 
-    def call_llm(self, prompt, temperature, num_calls, deployment_name, system_prompt="You are a helpful assistant."):
+    def call_llm(self, prompt, temperature, num_calls, deployment_name, system_prompt="You are a helpful assistant.", 
+                max_tokens=150, top_p=1.0, frequency_penalty=0.0):
         responses = []
         for _ in range(num_calls):
             response = self.client.chat.completions.create(
@@ -23,7 +24,9 @@ class OpenAIClientWrapper:
                     {"role": "user", "content": prompt}
                 ],
                 temperature=temperature,
-                max_tokens=150
+                max_tokens=max_tokens,
+                top_p=top_p,
+                frequency_penalty=frequency_penalty
             )
             responses.append(response.choices[0].message.content.strip())
         return responses
